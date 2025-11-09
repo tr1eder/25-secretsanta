@@ -1,6 +1,26 @@
 import { webcrypto as crypto } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 
+function makeShuffle(lst: string[]): string[] {
+	const shuffle = lst.slice();
+	while (!isShuffle(lst, shuffle)) {
+		shuffle.sort(() => Math.random() - 0.5);
+	}
+	return shuffle;
+}
+
+function isShuffle(lst: string[], shuffle: string[]): boolean {
+	const noSelfLoops = myZip(lst, shuffle).every(
+		([wichtel, wichtelchind]) => wichtel !== wichtelchind
+	);
+	// potentially check for other conditions such as no repeated wichteli from last year if it is stateful comp.
+	return noSelfLoops;
+}
+
+function myZip<T, U>(arr1: T[], arr2: U[]): [T, U][] {
+	return arr1.map((value, index) => [value, arr2[index]]);
+}
+
 function normalizeCipher(s: string) {
 	try {
 		s = decodeURIComponent(s);
@@ -113,6 +133,14 @@ async function computeSantas(
 	return resolved;
 }
 
+export function load({ url }) {
+	// read on server or at render-time
+	return {
+		qname: url.searchParams.get('name') ?? '',
+		qpwd: url.searchParams.get('password') ?? ''
+	};
+}
+
 export const actions = {
 	wichtelkind: async ({ request }) => {
 		const formData = await request.formData();
@@ -136,23 +164,3 @@ export const actions = {
 		return { matching };
 	}
 };
-
-function makeShuffle(lst: string[]): string[] {
-	const shuffle = lst.slice();
-	while (!isShuffle(lst, shuffle)) {
-		shuffle.sort(() => Math.random() - 0.5);
-	}
-	return shuffle;
-}
-
-function isShuffle(lst: string[], shuffle: string[]): boolean {
-	const noSelfLoops = myZip(lst, shuffle).every(
-		([wichtel, wichtelchind]) => wichtel !== wichtelchind
-	);
-	// potentially check for other conditions such as no repeated wichteli from last year if it is stateful comp.
-	return noSelfLoops;
-}
-
-function myZip<T, U>(arr1: T[], arr2: U[]): [T, U][] {
-	return arr1.map((value, index) => [value, arr2[index]]);
-}

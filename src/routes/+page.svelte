@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { error } from '@sveltejs/kit';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { deserialize } from '$app/forms';
-	import { myRandom, boxMullerTransform, flakes } from '$lib/utils';
-	import { onMount } from 'svelte';
+	import { flakes } from '$lib/utils';
 
 	const GIFT_RED = '#a11e2c';
 	const DARK_RED = '#830f10';
 	const RIBBON = '#e48f4f';
 	const DOT = '#FFFFFF';
 
+	const { data } = $props() as { data?: { qname?: string; qpwd?: string } };
+
 	// User state
-	let name = $state('');
-	let password = $state('');
+	let name = $state(data?.qname ?? '');
+	let password = $state(data?.qpwd ?? '');
 	let showPassword = $state(false);
 
 	// Result state
@@ -29,15 +29,6 @@
 	let participants: string[] = $state([]);
 	let hoveredIndex = $state(-1);
 	let adminNewMatching = $state<{ W: string; CIPHER: string }[]>([]);
-
-	onMount(() => {
-		const sp = new URLSearchParams(window.location.search);
-		const qname = sp.get('name');
-		const qpwd = sp.get('password');
-		console.log('Query params:', { qname, qpwd });
-		if (qname) name = qname;
-		if (qpwd) password = qpwd;
-	});
 
 	function toggleAdmin() {
 		showAdmin = !showAdmin;
@@ -192,12 +183,17 @@
 								left: {f.left}%;
 								width: {f.size}px;
 								height: {f.size}px;
-								animation-delay: {f.delay}s;
+								animation-duration: {f.speed}s, {f.spin}s;
+								animation-delay: {f.delay}s, 0s;
+								animation-timing-function: linear, linear;
+								animation-iteration-count: 1, infinite;
+								animation-fill-mode: both, none;
 								background-image: {f.bg};
 								background-size: 100% 100%;
 								background-repeat: no-repeat;
 								background-position: center;
-								rotate: {f.rotate}deg;
+								--initial-rot: {f.rotate ?? 0}deg;
+								transform-origin: center;
 							"
 						></div>
 					{/each}
@@ -275,13 +271,17 @@
 					<Button
 						id="submit"
 						type="submit"
-						class="mt-1 {name !== '' && password !== '' ? 'block' : 'hidden'} w-1/5 bg-red-900"
-						>Submit</Button
+						class="mt-1 {name !== '' && password !== ''
+							? 'block'
+							: 'hidden'} w-1/5 cursor-pointer bg-red-900">Submit</Button
 					>
 				</div>
 			</form>
 
-			<p class="mt-3">1. Login: Benutzername und Passwort oben eintragen.</p>
+			<p class="mt-3">
+				1. Login: Benutzername und Passwort oben eintragen, falls noch nicht geschehen. Submit →
+				Wichtelkind erfahren.
+			</p>
 			<p class="mt-1">
 				2. Regeln: 1 Geschenk, unter 50 CHF, eingepackt und angeschrieben, so, dass der Absender
 				unerkannt bleibt.
@@ -305,7 +305,19 @@
 					<defs>
 						<pattern id="polka" width="20" height="20" patternUnits="userSpaceOnUse">
 							<rect width="20" height="20" fill={GIFT_RED} />
-							<circle cx="10" cy="10" r="3" fill={DOT} />
+							{#if flakes && flakes.length}
+								<!-- use the first flake's bg (strip possible url(...) wrapper) -->
+								<image
+									x="0"
+									y="0"
+									width="12"
+									height="12"
+									href={flakes[0].bg.replace(/^url\(["']?/, '').replace(/["']?\)$/, '')}
+									preserveAspectRatio="xMidYMid slice"
+								/>
+							{:else}
+								<circle cx="10" cy="10" r="3" fill={DOT} />
+							{/if}
 						</pattern>
 					</defs>
 
@@ -484,23 +496,37 @@
 			opacity: 0;
 		}
 	}
+	@keyframes spin {
+		from {
+			transform: rotate(var(--initial-rot, 0deg));
+		}
+		to {
+			transform: rotate(calc(var(--initial-rot, 0deg) + 360deg));
+		}
+	}
 	.snowflake {
-		position: fixed;
+		/* position relative to the overlay so left/top are percentages of the tree area */
+		position: absolute;
 		top: -10px;
 		width: 10px;
 		height: 10px;
 		border-radius: 100%;
-		animation: snow 10s linear;
-		animation-fill-mode: both;
+		/* default names/timing will be overridden by inline styles per-flake */
+		animation-name: snow, spin;
+		animation-duration: 10s, 4s;
+		animation-timing-function: linear, linear;
+		animation-iteration-count: 1, infinite;
+		animation-fill-mode: both, none;
 		opacity: 0;
 		transform-origin: center;
+		pointer-events: none;
 	}
-	.snowflake:nth-child(odd) {
+	/* .snowflake:nth-child(odd) {
 		animation-duration: 8s;
 	}
 	.snowflake:nth-child(even) {
 		animation-duration: 12s;
-	}
+	} */
 
 	.lid {
 		transition: transform 0.3s cubic-bezier(0.35, 0.15, 0.25, 1);

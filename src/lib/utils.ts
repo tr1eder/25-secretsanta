@@ -62,10 +62,12 @@ function makeStarDataUri(jitter = 0.12, color = '#ffffff') {
 export const flakes = Array.from({ length: 400 }, (_, i) => {
 	const size = Math.round(myRandom(1, 16)); // single size param (px)
 	// jitter based on a small normal deviate (absolute) so jitter >= 0
-	const jitter = Math.abs(boxMullerTransform()) * 0.22;
+	const jitter = Math.abs(boxMullerTransform()) * 0.12;
 	const bg = makeStarDataUri(jitter);
 	const left = myRandom(0, 100);
-	const delay = (boxMullerTransform() * 4.5 + 11).toFixed(3);
+	const delay = (boxMullerTransform() * 4.5 + 16).toFixed(3);
 	const rotate = myRandom(0, 360);
-	return { i, size, bg, left, delay, rotate };
+	const spin = myRandom(5, 40);
+	const speed = myRandom(6, 14);
+	return { i, size, bg, left, delay, rotate, spin, speed };
 });
